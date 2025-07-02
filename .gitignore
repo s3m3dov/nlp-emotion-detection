@@ -152,3 +152,4 @@ Icon
 # Project specific
 #-------------------------------
 # Add any project-specific ignores here
+poetry.lock
