@@ -153,3 +153,4 @@ Icon
 #-------------------------------
 # Add any project-specific ignores here
 poetry.lock
+results/
