@@ -1,0 +1,51 @@
+id,text,anger,fear,joy,sadness,surprise
+test_001,"I am so happy to see you!",0,0,1,0,0
+test_002,"This is absolutely terrifying.",0,1,0,0,0
+test_003,"I can't believe you did that!",1,0,0,0,1
+test_004,"Losing my keys made me really sad.",0,0,0,1,0
+test_005,"Wow, what a surprise party!",0,0,1,0,1
+test_006,"I'm angry and scared at the same time.",1,1,0,0,0
+test_007,"This makes me both happy and sad.",0,0,1,1,0
+test_008,"I feel nothing at all.",0,0,0,0,0
+test_009,"Unexpected joy filled the room.",0,0,1,0,1
+test_010,"His words made me furious.",1,0,0,0,0
+test_011,"She was shocked and afraid.",0,1,0,0,1
+test_012,"I laughed and cried at the same time.",0,0,1,1,0
+test_013,"The news brought anger and sadness.",1,0,0,1,0
+test_014,"I am surprised by how calm I feel.",0,0,0,0,1
+test_015,"This is a joyful and fearless moment.",0,0,1,0,0
+test_016,"I am so angry I could scream.",1,0,0,0,0
+test_017,"The darkness fills me with fear.",0,1,0,0,0
+test_018,"Winning the prize made me jump for joy.",0,0,1,0,1
+test_019,"I am sad about the rainy weather.",0,0,0,1,0
+test_020,"The sudden noise surprised everyone.",0,0,0,0,1
+test_021,"I feel both anger and surprise at the news.",1,0,0,0,1
+test_022,"Her kindness brought me joy and surprise.",0,0,1,0,1
+test_023,"I am afraid and sad about the results.",0,1,0,1,0
+test_024,"Nothing makes me happier than your smile.",0,0,1,0,0
+test_025,"He was angry, but also a little joyful.",1,0,1,0,0
+test_026,"The outcome was unexpected and sad.",0,0,0,1,1
+test_027,"I am not feeling any emotion right now.",0,0,0,0,0
+test_028,"Her words filled me with fear and anger.",1,1,0,0,0
+test_029,"I am surprised by my own happiness.",0,0,1,0,1
+test_030,"The movie made me cry and laugh.",0,0,1,1,0
+test_031,"I am both happy and surprised by the results.",0,0,1,0,1
+test_032,"The silence in the room made me uneasy.",0,1,0,0,0
+test_033,"I am angry and sad about the situation.",1,0,0,1,0
+test_034,"Her laughter brought me so much joy.",0,0,1,0,0
+test_035,"I was surprised and a little scared.",0,1,0,0,1
+test_036,"Nothing could ruin my happiness today.",0,0,1,0,0
+test_037,"The news left me in shock and sadness.",0,0,0,1,1
+test_038,"I am furious and can't calm down.",1,0,0,0,0
+test_039,"He was afraid but tried to hide it.",0,1,0,0,0
+test_040,"The party was full of joy and laughter.",0,0,1,0,0
+test_041,"I am sad and surprised at the same time.",0,0,0,1,1
+test_042,"Her words made me angry and surprised.",1,0,0,0,1
+test_043,"I feel a mix of fear and joy.",0,1,1,0,0
+test_044,"The outcome was neither good nor bad.",0,0,0,0,0
+test_045,"I am happy, surprised, and a bit sad.",0,0,1,1,1
+test_046,"He was angry and fearful during the event.",1,1,0,0,0
+test_047,"The results brought me joy and relief.",0,0,1,0,0
+test_048,"I am surprised by how angry I feel.",1,0,0,0,1
+test_049,"She was sad but also a little joyful.",0,0,1,1,0
+test_050,"The announcement filled me with fear and surprise.",0,1,0,0,1
