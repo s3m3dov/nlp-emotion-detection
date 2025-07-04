@@ -1,5 +1,5 @@
 import torch
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
 import os
 import logging
@@ -13,16 +13,17 @@ logger = logging.getLogger(__name__)
 EMOTIONS = ['anger', 'fear', 'joy', 'sadness', 'surprise']
 
 class EmotionDetector:
-    def __init__(self, model_path='./results', fallback_path=None):
+    def __init__(self, model_path='./results', model_name=None, fallback_path=None):
         """
         Initialize the emotion detector with a pre-trained model
 
         Args:
             model_path (str): Path to the saved model directory
+            model_name (str, optional): Base model name to use if no fine-tuned model is found
             fallback_path (str, optional): Fallback path if main path fails
         """
-        # Load tokenizer
-        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        self.model_name = model_name or 'bert-base-uncased'
+        self.tokenizer = None
         self.model = None
 
         # Try loading from the specified path
@@ -34,9 +35,10 @@ class EmotionDetector:
             return
 
         # Final fallback to base model
-        logger.info("Using base BERT model. Note: This model is not trained for emotion detection and will give random results.")
-        self.model = BertForSequenceClassification.from_pretrained(
-            'bert-base-uncased',
+        logger.info(f"Using base {self.model_name} model. Note: This model is not trained for emotion detection and will give random results.")
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            self.model_name,
             num_labels=len(EMOTIONS),
             problem_type="multi_label_classification"
         )
@@ -60,7 +62,8 @@ class EmotionDetector:
                 return False
 
             logger.info(f"Loading model from {path}")
-            self.model = BertForSequenceClassification.from_pretrained(
+            self.tokenizer = AutoTokenizer.from_pretrained(path)
+            self.model = AutoModelForSequenceClassification.from_pretrained(
                 path,
                 num_labels=len(EMOTIONS),
                 problem_type="multi_label_classification"
@@ -83,7 +86,7 @@ class EmotionDetector:
         Returns:
             dict: Dictionary with detected emotions and their probabilities
         """
-        if self.model is None:
+        if self.model is None or self.tokenizer is None:
             raise RuntimeError("No model has been loaded successfully")
 
         # Tokenize the text
@@ -132,7 +135,7 @@ class EmotionDetector:
         Returns:
             list: List of prediction results
         """
-        if self.model is None:
+        if self.model is None or self.tokenizer is None:
             raise RuntimeError("No model has been loaded successfully")
 
         results = []
@@ -183,30 +186,62 @@ class EmotionDetector:
 
         return results
 
-def save_model_from_trainer(trainer, output_dir='./results'):
-    """
-    Save the model from a Hugging Face trainer object
+    def get_human_readable_predictions(self, csv_file_path, threshold=0.5):
+        """
+        Generate human-readable emotion predictions for texts in a CSV file
 
-    This function should be called from the notebook after training
+        Args:
+            csv_file_path (str): Path to the CSV file containing texts to analyze
+            threshold (float): Probability threshold for emotion detection
 
-    Args:
-        trainer: Hugging Face Trainer object with trained model
-        output_dir (str): Directory to save the model
-    """
-    # Make sure the output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+        Returns:
+            pd.DataFrame: DataFrame with texts and their predicted emotions
+        """
+        try:
+            # Load the CSV file
+            logger.info(f"Loading CSV file from {csv_file_path}")
+            df = pd.read_csv(csv_file_path)
 
-    # Save the model
-    trainer.save_model(output_dir)
-    logger.info(f"Model saved to {output_dir}")
+            if 'text' not in df.columns:
+                raise ValueError("CSV file must contain a 'text' column")
 
-def predict(csv_file_path, model_path='./results', threshold=0.5):
+            texts = df['text'].tolist()
+            logger.info(f"Loaded {len(texts)} texts from CSV")
+
+            # Make predictions
+            logger.info("Making predictions...")
+            results = self.predict_batch(texts, threshold)
+
+            # Create a new DataFrame with prediction results
+            output_data = []
+            for result in results:
+                row = {
+                    'text': result['text'],
+                    'detected_emotions': ', '.join(result['detected_emotions']) if result['detected_emotions'] else 'None'
+                }
+
+                # Add individual emotion probabilities
+                for emotion, prob in result['emotions'].items():
+                    row[f'{emotion}_probability'] = f"{prob:.4f}"
+
+                output_data.append(row)
+
+            output_df = pd.DataFrame(output_data)
+            logger.info("Human-readable predictions generated")
+            return output_df
+
+        except Exception as e:
+            logger.error(f"Error during prediction: {str(e)}")
+            raise
+
+def predict(csv_file_path, model_path='./results', model_name=None, threshold=0.5):
     """
     Predict emotions for texts in a CSV file
 
     Args:
         csv_file_path (str): Path to the CSV file containing texts to analyze
         model_path (str): Path to the model directory
+        model_name (str, optional): Base model name to use if no fine-tuned model is found
         threshold (float): Probability threshold for emotion detection
 
     Returns:
@@ -226,7 +261,7 @@ def predict(csv_file_path, model_path='./results', threshold=0.5):
         logger.info(f"Loaded {len(texts)} texts from CSV")
 
         # Initialize the emotion detector
-        detector = EmotionDetector(model_path=model_path)
+        detector = EmotionDetector(model_path=model_path, model_name=model_name)
 
         # Make predictions
         logger.info("Making predictions...")
@@ -242,6 +277,36 @@ def predict(csv_file_path, model_path='./results', threshold=0.5):
         logger.error(f"Error during prediction: {str(e)}")
         raise
 
+def predict_and_print(csv_file_path, model_path='./results', model_name=None, threshold=0.5):
+    """
+    Helper function to predict emotions and display results in human-readable format
+
+    Args:
+        csv_file_path (str): Path to the CSV file containing texts to analyze
+        model_path (str): Path to the model directory
+        model_name (str, optional): Base model name to use if no fine-tuned model is found
+        threshold (float): Probability threshold for emotion detection
+
+    Returns:
+        pd.DataFrame: DataFrame with texts and their predicted emotions
+    """
+    # Initialize the emotion detector
+    detector = EmotionDetector(model_path=model_path, model_name=model_name)
+
+    # Get human-readable predictions
+    results_df = detector.get_human_readable_predictions(csv_file_path, threshold)
+
+    # Display the results
+    print(f"\nEmotion Detection Results for {csv_file_path}:")
+    for _, row in results_df.iterrows():
+        print(f"\nText: {row['text']}")
+        print(f"Detected emotions: {row['detected_emotions']}")
+        print("Emotion probabilities:")
+        for emotion in EMOTIONS:
+            print(f"  {emotion}: {row[f'{emotion}_probability']}")
+
+    return results_df
+
 def main():
     """
     Main function to demonstrate emotion detection
@@ -250,7 +315,8 @@ def main():
     try:
         detector = EmotionDetector(
             model_path='./results',
-            fallback_path='./model'  # Try an alternative path if exists
+            model_name='bert-base-uncased',
+            fallback_path='./model'
         )
     except Exception as e:
         logger.error(f"Failed to initialize model: {str(e)}")
@@ -282,7 +348,7 @@ def main():
     try:
         # If you have a test CSV file, uncomment and modify this section:
         test_csv = "data/test.csv"
-        predictions = predict(test_csv)
+        predictions = predict(test_csv, model_path="./results", model_name="roberta-base")
         print(f"Predictions shape: {predictions.shape}")
         print("First 3 predictions:")
         for i in range(min(3, len(predictions))):
@@ -292,5 +358,17 @@ def main():
         logger.error(f"Error testing CSV prediction: {str(e)}")
 
 if __name__ == "__main__":
-    result = predict("data/test.csv")
+    # Example usage with specific model path and model name
+    result = predict(
+        "data/test.csv",
+        model_path="./results/roberta-base_vanilla_out",
+        model_name="roberta-base"
+    )
     print(result)
+
+    # Uncomment to get human-readable results
+    # predict_and_print(
+    #     "data/test.csv",
+    #     model_path="./results/roberta-base_vanilla_out",
+    #     model_name="roberta-base"
+    # )
