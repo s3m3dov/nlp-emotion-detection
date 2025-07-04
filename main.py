@@ -4,6 +4,10 @@ import numpy as np
 import os
 import logging
 import pandas as pd
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+from collections import Counter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -115,12 +119,17 @@ class EmotionDetector:
             'probabilities': probabilities
         }
 
-        # Add probabilities for each emotion
+        # Add probabilities for each emotion and track detected emotions with their probabilities
+        detected_emotions_with_probs = []
         for i, emotion in enumerate(EMOTIONS):
             prob = float(probabilities[i])
             result['emotions'][emotion] = prob
             if prob >= threshold:
-                result['detected_emotions'].append(emotion)
+                detected_emotions_with_probs.append((emotion, prob))
+
+        # Sort detected emotions by probability (highest first)
+        detected_emotions_with_probs.sort(key=lambda x: x[1], reverse=True)
+        result['detected_emotions'] = [emotion for emotion, _ in detected_emotions_with_probs]
 
         return result
 
@@ -175,12 +184,17 @@ class EmotionDetector:
                     'probabilities': probs
                 }
 
-                # Add probabilities for each emotion
+                # Add probabilities for each emotion and track detected emotions with their probabilities
+                detected_emotions_with_probs = []
                 for k, emotion in enumerate(EMOTIONS):
                     prob = float(probs[k])
                     result['emotions'][emotion] = prob
                     if prob >= threshold:
-                        result['detected_emotions'].append(emotion)
+                        detected_emotions_with_probs.append((emotion, prob))
+
+                # Sort detected emotions by probability (highest first)
+                detected_emotions_with_probs.sort(key=lambda x: x[1], reverse=True)
+                result['detected_emotions'] = [emotion for emotion, _ in detected_emotions_with_probs]
 
                 results.append(result)
 
@@ -245,9 +259,10 @@ def predict(csv_file_path, model_path='./results', model_name=None, threshold=0.
         threshold (float): Probability threshold for emotion detection
 
     Returns:
-        numpy.ndarray: Array of prediction arrays for each item in the CSV
-                      Each prediction is an array of probabilities for
-                      [anger, fear, joy, sadness, surprise]
+        numpy.ndarray: Array of binary prediction arrays for each item in the CSV
+                      Each prediction is an array of 0s and 1s for
+                      [anger, fear, joy, sadness, surprise], where 1 indicates
+                      the emotion is detected (probability >= threshold)
     """
     try:
         # Load the CSV file
@@ -268,9 +283,12 @@ def predict(csv_file_path, model_path='./results', model_name=None, threshold=0.
         results = detector.predict_batch(texts, threshold)
 
         # Extract probabilities for each emotion
-        predictions = np.array([result['probabilities'] for result in results])
+        probabilities = np.array([result['probabilities'] for result in results])
 
-        logger.info("Predictions complete")
+        # Convert probabilities to binary values (0s and 1s)
+        predictions = (probabilities >= threshold).astype(int)
+
+        logger.info("Binary predictions complete")
         return predictions
 
     except Exception as e:
